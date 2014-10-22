@@ -1,0 +1,5 @@
+include histogramRecord.dbd
+
+device(ai,INST_IO,devAiLTC2499,"ADC channel")
+device(mbbo,INST_IO,devMbboLTC2499,"ADC channel")
+registrar(devLTC2499Registrar)

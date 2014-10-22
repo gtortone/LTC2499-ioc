@@ -1,0 +1,269 @@
+#
+# CHANNEL 0 - CHANNEL 1 differential mode - noise floor histogram
+#
+
+record(ai,"$(P):DIFF:CH0:value") {
+  field(DTYP,"$(D)")
+  field(DESC,"LTC2499 channel")
+  field(SCAN,"1 second")
+  field(INP,"@0:DIFF:30")
+  field(FLNK,"$(P):DIFF:CH0:voltage")
+  field(MDEL,-1)
+}
+
+record(calc,"$(P):DIFF:CH0:voltage") {
+  field(INPA,"$(P):DIFF:CH0:value")
+  field(CALC,"A * 2.5 / (2^30 - 1)")
+  field(EGU,"Volt")
+  field(HOPR,2.5)
+  field(LOPR,-2.5)
+  field(HIGH,2.4)
+  field(LOW,-2.4)
+  field(HIHI,2.49)
+  field(LOLO,-2.49)
+  field(HHSV,"MAJOR")
+  field(HSV,"MINOR")
+  field(LSV,"MINOR")
+  field(LLSV,"MAJOR")
+  field(FLNK,"$(P):DIFF:CH0:uvoltage")
+  field(MDEL,-1)
+}
+
+record(calc,"$(P):DIFF:CH0:uvoltage") {
+  field(INPA,"$(P):DIFF:CH0:voltage")
+  field(CALC,"A * 1000000")
+  field(FLNK,"$(P):noisefloor")
+  field(MDEL,-1)
+}
+
+record(histogram,"$(P):noisefloor") {
+  field(DESC,"LTC2499 noise floor")
+  field(DTYP,"Soft Channel")
+  field(SVL,"$(P):DIFF:CH0:uvoltage")
+  field(ULIM,3)
+  field(LLIM,-3)
+  field(NELM,1000)
+}
+
+#
+# CHANNEL 14 - CHANNEL 15 differential mode - RTD (Resistance Temperature Detectors)
+#
+
+record(ai,"$(P):NTC:value") {
+  field(DTYP,"$(D)")
+  field(DESC,"LTC2499 channel")
+  field(SCAN,"1 second")
+  field(INP,"@14:DIFF:24")
+  field(FLNK,"$(P):NTC:voltage")
+  field(MDEL,-1)
+}
+
+record(calc,"$(P):NTC:voltage") {
+  field(INPA,"$(P):NTC:value")
+  field(CALC,"A * 2.5 / (2^24 - 1)")
+  field(EGU,"Volt")
+  field(HOPR,2.5)
+  field(LOPR,-2.5)
+  field(HIGH,2.4)
+  field(LOW,-2.4)
+  field(HIHI,2.49)
+  field(LOLO,-2.49)
+  field(HHSV,"MAJOR")
+  field(HSV,"MINOR")
+  field(LSV,"MINOR")
+  field(LLSV,"MAJOR")
+  field(FLNK,"$(P):NTC:resistance")
+  field(MDEL,-1)
+}
+
+record(calc,"$(P):NTC:resistance") {
+  field(DESC,"NTC resistance")
+  field(INPA,"$(P):NTC:voltage")
+  field(CALC,"A / ( (5 - A) / 102400 )")
+  field(EGU,"Ohm")
+  field(FLNK,"internal:NTC:res:fanout")
+  field(MDEL,-1)
+}
+
+record(fanout,"internal:NTC:res:fanout") {
+  field(LNK1,"$(P):NTC:bt:degC")
+  field(LNK2,"$(P):NTC:bc:degC")
+  field(LNK3,"internal:NTC:sh:a0")
+  field(LNK4,"$(P):NTC:sh:degC")
+}
+
+#
+# NTC temperature calculated by breakpoint table
+#
+
+record(ai,"$(P):NTC:bt:degC") {
+  field(DTYP,"Raw Soft Channel")
+  field(DESC,"NTC temperature - breakpoint table")
+  field(INP,"$(P):NTC:resistance")
+  field(LINR,"semitec103at2")
+  field(EGU,"degC")
+  field(HOPR,150)
+  field(LOPR,-55)
+  field(HIGH,45)
+  field(LOW,15)
+  field(HIHI,115)
+  field(LOLO,-35)
+  field(MDEL,-1)
+}
+
+#
+# NTC temperature calculated by B coefficient
+#
+
+record(calc,"$(P):NTC:bc:degC") {
+  field(DESC,"NTC temperature - B coefficient")
+  field(INPA,"$(P):NTC:resistance")
+  field(CALC,"(1 / ((LOGE(A/10000)/3435)+(1/298.15)) - 273.15)")
+  field(EGU,"degC")
+  field(HOPR,150)
+  field(LOPR,-55)
+  field(HIGH,45)
+  field(LOW,15)
+  field(HIHI,115)
+  field(LOLO,-35)
+  field(MDEL,-1)
+}
+
+#
+# NTC temperature calculated by Steinhart-Hart equation
+# 
+
+record(calc,"internal:NTC:sh:a0") {
+  field(CALC,"8.1772*(10^-4)")
+  field(FLNK,"internal:NTC:sh:a1")
+}
+
+record(calc,"internal:NTC:sh:a1") {
+  field(INPA,"$(P):NTC:resistance")
+  field(CALC,"2.7490*(10^-4)*LOGE(A)")
+  field(FLNK,"internal:NTC:sh:a2")
+}
+
+record(calc,"internal:NTC:sh:a2") {
+  field(INPA,"$(P):NTC:resistance")
+  field(CALC,"-2.6049*(10^-6)*(LOGE(A)^2)")
+  field(FLNK,"internal:NTC:sh:a3")
+}
+
+record(calc,"internal:NTC:sh:a3") {
+  field(INPA,"$(P):NTC:resistance")
+  field(CALC,"2.8835*(10^-7)*(LOGE(A)^3)")
+}
+
+record(calc,"$(P):NTC:sh:degC") {
+  field(DESC,"NTC temperature - S.H. equation")
+  field(INPA,"internal:NTC:sh:a0")
+  field(INPB,"internal:NTC:sh:a1")
+  field(INPC,"internal:NTC:sh:a2")
+  field(INPD,"internal:NTC:sh:a3")
+  field(CALC,"(1 / (A + B + C + D)) - 273.15")
+  field(EGU,"degC")
+  field(HOPR,150)
+  field(LOPR,-55)
+  field(HIGH,45)
+  field(LOW,15)
+  field(HIHI,115)
+  field(LOLO,-35)
+  field(MDEL,-1)
+}
+
+#
+# LTC2499 generic channel (SE or DIFF) record
+#
+
+record(ai,"$(P):$(M):CH$(C):value") {
+  field(DTYP,"$(D)")
+  field(DESC,"LTC2499 channel")
+  field(SCAN,"1 second")
+  field(INP,"@$(C):$(M):24")
+  field(FLNK,"$(P):$(M):CH$(C):voltage")
+  field(MDEL,-1)
+}
+
+record(ai,"$(P):$(M):CH$(C):voltage") {
+  field(DTYP,"Raw Soft Channel")
+  field(INP,"$(P):$(M):CH$(C):value")
+  field(LINR,"LINEAR")
+  field(ESLO,0.000000149)
+  field(EGU,"Volt")
+  field(HOPR,2.5)
+  field(LOPR,-2.5)
+  field(HIGH,2.4)
+  field(LOW,-2.4)
+  field(HIHI,2.49)
+  field(LOLO,-2.49)
+  field(HHSV,"MAJOR")
+  field(HSV,"MINOR")
+  field(LSV,"MINOR")
+  field(LLSV,"MAJOR")
+  field(MDEL,-1)
+}
+
+#
+# LTC2499 internal temperature
+# 
+
+record(ai,"$(P):temperature") {
+  field(DTYP,"$(D)")
+  field(DESC,"LTC2499 internal temperature")
+  field(SCAN,"5 second")
+  field(INP,"@16:TEMP:24")
+  field(LINR,"LINEAR")
+  field(EGU,"degC")
+  field(HOPR,120)
+  field(LOPR,-55)
+  field(EGUF,120)
+  field(EGUL,-55)
+  field(ESLO,0.001592357)
+  field(EOFF,-273.15)
+  field(HIGH,45)
+  field(LOW,15)
+  field(HIHI,115)
+  field(LOLO,-35)
+  field(HHSV,"MAJOR")
+  field(HSV,"MINOR")
+  field(LSV,"MINOR")
+  field(LLSV,"MAJOR")
+}
+
+#
+# LTC2499 configuration registers
+#
+
+record(mbbo,"$(P):CONF:speed") {
+  field(DESC,"conversion speed")
+  field(SCAN,"Passive")
+  field(DTYP,"$(D)")
+  field(PINI,"YES")
+  field(ZRVL,"0")
+  field(ZRST,"1x")
+  field(ONVL,"8")
+  field(ONST,"2x")
+  field(OMSL,"supervisory")
+  field(DOL,"1")
+  field(OUT,"1")
+  field(RVAL,"0")
+}
+
+record(mbbo,"$(P):CONF:rejection") {
+  field(DESC,"rejection frequency")
+  field(SCAN,"Passive")
+  field(DTYP,"$(D)")
+  field(PINI,"YES")
+  field(ZRVL,"144")
+  field(ZRST,"50 Hz")
+  field(ONVL,"160")
+  field(ONST,"60 Hz")
+  field(TWVL,"128")
+  field(TWST,"50 Hz and 60 Hz")
+  field(OMSL,"supervisory")
+  field(DOL,"1")
+  field(OUT,"1")
+  field(RVAL,"128")
+}
+
