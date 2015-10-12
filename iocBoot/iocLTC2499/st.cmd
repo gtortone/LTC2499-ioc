@@ -31,7 +31,8 @@ dbLoadRecords("dbd/semitec103at2.dbd")
 ## configure module I2C bus number, I2C module address, ADC VREF
 epicsEnvSet("VREF","5.0")
 epicsEnvSet("HALFVREF","2.5")
-devLTC2499config(1, 0x76, $(VREF))
+#devLTC2499config(1, 0x76, $(VREF))	# /dev/i2c-1 - I2C2 on uSOP
+devLTC2499config(2, 0x76, $(VREF))	# /dev/i2c-2 - I2C1 on uSOP
 
 ## Load record instances
 #
@@ -40,7 +41,10 @@ devLTC2499config(1, 0x76, $(VREF))
 #
 # example:
 #
-dbLoadRecords("db/LTC2499.db","P=LTC2499,D=ADC channel,C=2,M=SE")
+dbLoadRecords("db/LTC2499.db","P=LTC2499,D=ADC channel,C=2,M=DIFF")
+dbLoadRecords("db/LTC2499.db","P=LTC2499,D=ADC channel,C=4,M=DIFF")
+dbLoadRecords("db/LTC2499.db","P=LTC2499,D=ADC channel,C=6,M=DIFF")
+dbLoadRecords("db/LTC2499.db","P=LTC2499,D=ADC channel,C=8,M=DIFF")
 
 cd ${TOP}/iocBoot/${IOC}
 iocInit
